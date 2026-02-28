@@ -45,7 +45,9 @@ fun AppNavGraph() {
         composable(Routes.IMPORT) {
             ImportScreen(
                 onCreated = { listId ->
-                    navController.navigate("${Routes.EDITOR}/$listId")
+                    navController.navigate("${Routes.EDITOR}/$listId") {
+                        popUpTo(Routes.IMPORT) { inclusive = true }
+                    }
                 },
                 onBack = { navController.popBackStack() }
             )

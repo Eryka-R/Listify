@@ -90,6 +90,12 @@ object ListRepository {
         return newId
     }
 
+    fun deleteItem(listId: String, itemId: String) {
+        val list = getList(listId) ?: return
+        val newItems = list.items.filterNot { it.id == itemId }
+        updateList(list.copy(items = newItems)) // guarda en JSON porque updateList llama a saveToDisk
+    }
+
     private fun updateList(updated: MyList) {
         val index = lists.indexOfFirst { it.id == updated.id }
         if (index != -1) {

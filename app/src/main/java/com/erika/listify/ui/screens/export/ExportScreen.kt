@@ -11,6 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.erika.listify.data.repository.ListRepository
+import android.content.Intent
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,8 +66,26 @@ fun ExportScreen(
             ) {
                 Text("Copiar")
             }
+
+            Spacer(Modifier.height(8.dp))
+
+            Button(
+                onClick = { shareText(context, resultText) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = resultText.isNotBlank()
+            ) {
+                Text("Compartir")
+            }
         }
     }
+}
+
+private fun shareText(context: Context, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, "Compartir con…"))
 }
 
 private fun copyToClipboard(context: Context, text: String) {

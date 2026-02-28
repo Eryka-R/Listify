@@ -1,5 +1,6 @@
 package com.erika.listify.ui.screens.editor
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,10 +13,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.combinedClickable
 
 import com.erika.listify.data.repository.ListRepository
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ListEditorScreen(
     listId: String,
@@ -24,6 +26,8 @@ fun ListEditorScreen(
 ) {
     var input by remember { mutableStateOf("") }
     var version by remember { mutableIntStateOf(0) } // para refrescar simple
+    var itemMenuExpanded by remember { mutableStateOf(false) }
+    var selectedItemId by remember { mutableStateOf<String?>(null) }
 
     val list = ListRepository.getList(listId)
 
@@ -123,25 +127,48 @@ fun ListEditorScreen(
             } else {
                 LazyColumn(Modifier.weight(1f)) {
                     items(current.items) { item ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                                .clickable {
-                                    ListRepository.toggleItem(listId, item.id)
-                                    version++
-                                },
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(item.text)
-                            Checkbox(
-                                checked = item.checked,
-                                onCheckedChange = {
-                                    ListRepository.toggleItem(listId, item.id)
-                                    version++
-                                }
-                            )
+                        Box {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                                    .combinedClickable(
+                                        onClick = {
+                                            ListRepository.toggleItem(listId, item.id)
+                                            version++
+                                        },
+                                        onLongClick = {
+                                            selectedItemId = item.id
+                                            itemMenuExpanded = true
+                                        }
+                                    ),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(item.text)
+                                Checkbox(
+                                    checked = item.checked,
+                                    onCheckedChange = {
+                                        ListRepository.toggleItem(listId, item.id)
+                                        version++
+                                    }
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = itemMenuExpanded && selectedItemId == item.id,
+                                onDismissRequest = { itemMenuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Eliminar") },
+                                    onClick = {
+                                        itemMenuExpanded = false
+                                        ListRepository.deleteItem(listId, item.id)
+                                        version++
+                                    }
+                                )
+                            }
                         }
+
                         Divider()
                     }
                 }
