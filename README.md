@@ -36,5 +36,8 @@ La app está pensada como una herramienta **genérica**, no solo para listas de 
 - Las listas se conservan aunque se cierre la aplicación
 
 ## Estado del proyecto
-
 Proyecto funcional enfocado en aprender.
+
+## Autor
+Desarrollado por **Eryka Rimacuna**  
+Proyecto educativo / personal
