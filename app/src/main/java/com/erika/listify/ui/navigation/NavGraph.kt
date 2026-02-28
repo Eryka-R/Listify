@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import com.erika.listify.ui.screens.editor.ListEditorScreen
 import com.erika.listify.ui.screens.export.ExportScreen
 import com.erika.listify.ui.screens.home.HomeScreen
+import com.erika.listify.ui.screens.import.ImportScreen
 
 @Composable
 fun AppNavGraph() {
@@ -22,6 +23,9 @@ fun AppNavGraph() {
             HomeScreen(
                 onOpenList = { listId ->
                     navController.navigate("${Routes.EDITOR}/$listId")
+                },
+                onImport = {
+                    navController.navigate(Routes.IMPORT)
                 }
             )
         }
@@ -34,6 +38,15 @@ fun AppNavGraph() {
             ListEditorScreen(
                 listId = listId,
                 onExport = { navController.navigate("${Routes.EXPORT}/$listId") },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.IMPORT) {
+            ImportScreen(
+                onCreated = { listId ->
+                    navController.navigate("${Routes.EDITOR}/$listId")
+                },
                 onBack = { navController.popBackStack() }
             )
         }

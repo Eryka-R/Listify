@@ -9,12 +9,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.erika.listify.data.repository.ListRepository
 import com.erika.listify.ui.theme.ListifyTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        ListRepository.init(applicationContext)
         setContent {
             ListifyTheme {
                 AppNavGraph()

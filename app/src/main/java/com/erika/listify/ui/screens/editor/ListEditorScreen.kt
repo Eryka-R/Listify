@@ -9,6 +9,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+
 import com.erika.listify.data.repository.ListRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,24 +44,76 @@ fun ListEditorScreen(
                 .padding(16.dp)
         ) {
             val current = remember(version) { ListRepository.getList(listId) }
+            val existingTexts = current?.items?.map { it.text.lowercase().trim() }?.toSet().orEmpty()
 
-            Row(Modifier.fillMaxWidth()) {
+            var expanded by remember { mutableStateOf(false) }
+
+            val knownSuggestions = remember(version){
+                ListRepository.getAllKnownItemTexts()
+            }
+
+            val filteredSuggestions = remember(input, knownSuggestions, existingTexts) {
+                val q = input.trim()
+                if (q.isEmpty()) emptyList()
+                else knownSuggestions
+                    .filter { it.contains(q, ignoreCase = true) }
+                    .filter { it.lowercase().trim() !in existingTexts } // que no esté ya
+                    .take(6)
+            }
+
+            ExposedDropdownMenuBox(
+                expanded = expanded && filteredSuggestions.isNotEmpty(),
+                onExpandedChange = { expanded = !expanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 OutlinedTextField(
                     value = input,
-                    onValueChange = { input = it },
+                    onValueChange = {
+                        input = it
+                        expanded = true
+                    },
                     label = { Text("Añadir ítem") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
+                    singleLine = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .weight(1f, fill = false)
                 )
-                Spacer(Modifier.width(8.dp))
-                Button(onClick = {
-                    val txt = input.trim()
-                    if (txt.isNotEmpty()) {
-                        ListRepository.addItem(listId, txt)
-                        input = ""
-                        version++
+
+                ExposedDropdownMenu(
+                    expanded = expanded && filteredSuggestions.isNotEmpty(),
+                    onDismissRequest = { expanded = false }
+                ) {
+                    filteredSuggestions.forEach { suggestion ->
+                        DropdownMenuItem(
+                            text = { Text(suggestion) },
+                            onClick = {
+                                ListRepository.addItem(listId, suggestion)
+                                input = ""
+                                expanded = false
+                                version++
+                            }
+                        )
                     }
-                }) { Text("Añadir") }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = {
+                        val txt = input.trim()
+                        if (txt.isNotEmpty()) {
+                            // Evitar duplicados en la lista actual (por si acaso)
+                            if (txt.lowercase().trim() !in existingTexts) {
+                                ListRepository.addItem(listId, txt)
+                                input = ""
+                                expanded = false
+                                version++
+                            }
+                        }
+                    }
+                ) { Text("Añadir") }
             }
 
             Spacer(Modifier.height(16.dp))
