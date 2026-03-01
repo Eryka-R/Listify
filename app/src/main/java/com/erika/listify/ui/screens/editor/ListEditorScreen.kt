@@ -2,7 +2,6 @@ package com.erika.listify.ui.screens.editor
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,6 +27,8 @@ fun ListEditorScreen(
     var version by remember { mutableIntStateOf(0) } // para refrescar simple
     var itemMenuExpanded by remember { mutableStateOf(false) }
     var selectedItemId by remember { mutableStateOf<String?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editText by remember { mutableStateOf("") }
 
     val list = ListRepository.getList(listId)
 
@@ -52,7 +53,7 @@ fun ListEditorScreen(
 
             var expanded by remember { mutableStateOf(false) }
 
-            val knownSuggestions = remember(version){
+            val knownSuggestions = remember(version) {
                 ListRepository.getAllKnownItemTexts()
             }
 
@@ -61,7 +62,7 @@ fun ListEditorScreen(
                 if (q.isEmpty()) emptyList()
                 else knownSuggestions
                     .filter { it.contains(q, ignoreCase = true) }
-                    .filter { it.lowercase().trim() !in existingTexts } // que no esté ya
+                    .filter { it.lowercase().trim() !in existingTexts }
                     .take(6)
             }
 
@@ -108,7 +109,6 @@ fun ListEditorScreen(
                     onClick = {
                         val txt = input.trim()
                         if (txt.isNotEmpty()) {
-                            // Evitar duplicados en la lista actual (por si acaso)
                             if (txt.lowercase().trim() !in existingTexts) {
                                 ListRepository.addItem(listId, txt)
                                 input = ""
@@ -126,8 +126,11 @@ fun ListEditorScreen(
                 Text("Añade ítems arriba (ej: Aceite, Huevos...).")
             } else {
                 LazyColumn(Modifier.weight(1f)) {
-                    items(current.items) { item ->
-                        Box {
+                    items(
+                        items = current.items,
+                        key = { it.id }
+                    ) { item ->
+                        Box(modifier = Modifier.fillMaxWidth()) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -139,6 +142,7 @@ fun ListEditorScreen(
                                         },
                                         onLongClick = {
                                             selectedItemId = item.id
+                                            editText = item.text
                                             itemMenuExpanded = true
                                         }
                                     ),
@@ -159,6 +163,13 @@ fun ListEditorScreen(
                                 onDismissRequest = { itemMenuExpanded = false }
                             ) {
                                 DropdownMenuItem(
+                                    text = { Text("Editar") },
+                                    onClick = {
+                                        itemMenuExpanded = false
+                                        showEditDialog = true
+                                    }
+                                )
+                                DropdownMenuItem(
                                     text = { Text("Eliminar") },
                                     onClick = {
                                         itemMenuExpanded = false
@@ -175,6 +186,48 @@ fun ListEditorScreen(
             }
 
             Spacer(Modifier.height(12.dp))
+
+            if (showEditDialog) {
+                AlertDialog(
+                    onDismissRequest = { showEditDialog = false },
+                    title = { Text("Editar ítem") },
+                    text = {
+                        OutlinedTextField(
+                            value = editText,
+                            onValueChange = { editText = it },
+                            singleLine = true,
+                            label = { Text("Texto") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val id = selectedItemId
+                                val newValue = editText.trim()
+
+                                if (id != null && newValue.isNotBlank()) {
+                                    val currentList = ListRepository.getList(listId)
+                                    val existing = currentList?.items
+                                        ?.filter { it.id != id }
+                                        ?.map { it.text.lowercase().trim() }
+                                        ?.toSet()
+                                        .orEmpty()
+
+                                    if (newValue.lowercase().trim() !in existing) {
+                                        ListRepository.updateItemText(listId, id, newValue)
+                                        version++
+                                        showEditDialog = false
+                                    }
+                                }
+                            }
+                        ) { Text("Guardar") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showEditDialog = false }) { Text("Cancelar") }
+                    }
+                )
+            }
 
             Button(
                 onClick = onExport,

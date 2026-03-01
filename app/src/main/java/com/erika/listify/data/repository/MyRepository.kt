@@ -96,6 +96,30 @@ object ListRepository {
         updateList(list.copy(items = newItems)) // guarda en JSON porque updateList llama a saveToDisk
     }
 
+    fun updateItemText(listId: String, itemId: String, newText: String) {
+        val list = getList(listId) ?: return
+        val normalized = newText.trim()
+        if (normalized.isBlank()) return
+
+        val newItems = list.items.map { item ->
+            if (item.id == itemId) item.copy(text = normalized) else item
+        }
+        updateList(list.copy(items = newItems))
+    }
+
+    fun moveItem(listId: String, fromIndex: Int, toIndex: Int) {
+        val list = getList(listId) ?: return
+        if (fromIndex !in list.items.indices) return
+        if (toIndex !in list.items.indices) return
+        if (fromIndex == toIndex) return
+
+        val mutable = list.items.toMutableList()
+        val item = mutable.removeAt(fromIndex)
+        mutable.add(toIndex, item)
+
+        updateList(list.copy(items = mutable))
+    }
+
     private fun updateList(updated: MyList) {
         val index = lists.indexOfFirst { it.id == updated.id }
         if (index != -1) {
